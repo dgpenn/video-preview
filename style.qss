@@ -1,0 +1,149 @@
+* {
+    font-size: 18pt;
+    background-color: #222222;
+    color: #eeeeee;
+}
+
+#MetadataLabel {
+    border: none;
+}
+
+#LoadingLabel {
+    background-color: #000033;
+    border: 1px solid #0000ff;
+    padding: 2em;
+    margin: 0em;
+}
+
+#PlayerButton {
+    border: 1px solid #eeeeee;
+    height: 1em;
+    min-width: 1.5em;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    margin: 2px;
+}
+
+#PLayerButton:enabled {
+    background-color: #000033;
+}
+
+#PlayerButton:disabled {
+    background-color: #222222;
+}
+
+#LockLabel:disabled {
+    color: transparent;
+    background-color: transparent;
+}
+
+#TimeLabel {
+    font: 18pt 'Monospace';
+    color: #eeeeee;
+    background-color: transparent;
+}
+
+#LockLabel {
+    font: 18pt 'Monospace';
+    color: #dddd00;
+    background-color: transparent;
+}
+
+#VideoScrubber::groove:disabled {
+    background-color: rgba(255,255,255,0);
+}
+
+#VideoScrubber::handle:disabled {
+    background-color: rgba(255,255,255,0);
+}
+
+#VideoScrubber {
+    background-color: rgba(255,255,255,0);
+}
+
+#VideoScrubber::groove {
+    height: 8px;
+    background-color: rgba(0,0,51,255);
+}
+
+#VideoScrubber::handle:enabled {
+    background-color: #0000ff;
+    width: 0.25em;
+    margin: -5px 0;
+}
+
+/* This is after the handle */
+#VideoScrubber::add-page:enabled {
+    background-color: #000033;
+}
+
+/* This is before the handle */
+#VideoScrubber::sub-page:enabled {
+    background-color: #000077;
+}
+
+QScrollBar {
+    background-color: #222222;
+    border: 1px solid #ffffff;
+    border-radius: 5px;
+    width: 1em;
+}
+
+QScrollBar::handle {
+    background-color: #000033;
+    border: 1px solid #ffffff;
+}
+
+/* Remove arrow buttons */
+QScrollBar::sub-line, QScrollBar::add-line {
+    width: 0px;
+    height: 0px;
+}
+
+QPushButton {
+    background-color: #000033;
+    color: #eeeeee;
+    border: 1px solid #eeeeee;
+    padding: 0 1em;
+    border-radius: 5px;
+}
+
+QPushButton:disabled {
+    background-color: #222222;
+}
+
+QComboBox {
+    background-color: #000033;
+    color: #eeeeee;
+    border: 1px solid #eeeeee;
+    padding: 0 1em;
+    border-radius: 5px;
+}
+
+QComboBoxdisabled {
+    background-color: #222222;
+}
+
+
+#SearchField {
+    background-color: #222222;
+    color: #eeeeee;
+    border: 1px solid #eeeeee;
+    border-radius: 5px;
+}
+
+QLineEdit:focus {
+    background-color: #333333;
+}
+
+QTextEdit:focus {
+    background-color: #333333;
+}
+
+QTreeView::item:selected {
+    background-color: #000077;
+}
+
+QListWidget::item:selected {
+    background-color: #000077;
+}

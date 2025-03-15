@@ -1,0 +1,6 @@
+*API_KEY*
+*.sqlite
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
