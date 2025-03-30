@@ -91,7 +91,12 @@ class MetadataDownloader:
         return series_results
 
     def search_series(
-        self, name: str, year: int = None, adult: bool = False, language="en-US", page=1
+        self,
+        name: str,
+        year: int = None,
+        adult: bool = False,
+        language="en-US",
+        limit=5,
     ):
         all_series = []
         endpoint = "search/tv"
@@ -103,6 +108,8 @@ class MetadataDownloader:
         content = self._get_tmdb(endpoint=endpoint, params=params)
         if "results" in content:
             results = self._process_tmdb_series_results(content["results"])
+            if len(results) > limit:
+                results = results[0:limit]
             for series in results:
                 _id = series.ids["tmdb"]
                 content = self._get_series_details(_id)
