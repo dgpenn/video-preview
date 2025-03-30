@@ -5,6 +5,7 @@ from view.video_preview import VideoPreview
 from view.selection_dialog import SelectionDialog
 from view.loading_dialog import LoadingDialog
 from model.metadata import Series, Season, Episode
+from model.tvmaze import MetadataDownloader as TVMazeDownloader
 from model.tmdb import MetadataDownloader as TMDBDownloader
 from model.tvdb import MetadataDownloader as TVDBDownloader
 from controller.dialog import DialogController
@@ -46,7 +47,7 @@ class PrimaryController:
         self.video_preview: VideoPreview = video_preview
         self.metadata_preview: MetadataPreview = metadata_preview
 
-        self.downloaders = [TMDBDownloader(), TVDBDownloader()]
+        self.downloaders = [TMDBDownloader(), TVDBDownloader(), TVMazeDownloader()]
         self.loading_dialog = LoadingDialog()
 
         # clicking on video item will pause video
