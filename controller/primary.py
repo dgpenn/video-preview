@@ -8,6 +8,7 @@ from model.metadata import Series, Season, Episode
 from model.tvmaze import MetadataDownloader as TVMazeDownloader
 from model.tmdb import MetadataDownloader as TMDBDownloader
 from model.tvdb import MetadataDownloader as TVDBDownloader
+from model.omdb import MetadataDownloader as OMDBDownloader
 from controller.dialog import DialogController
 from backend.mkvtoolnix import get_metadata_title, set_metadata_title
 from PyQt6.QtWidgets import QDialog, QListWidgetItem, QFileDialog
@@ -47,7 +48,12 @@ class PrimaryController:
         self.video_preview: VideoPreview = video_preview
         self.metadata_preview: MetadataPreview = metadata_preview
 
-        self.downloaders = [TMDBDownloader(), TVDBDownloader(), TVMazeDownloader()]
+        self.downloaders = [
+            TMDBDownloader(),
+            TVDBDownloader(),
+            TVMazeDownloader(),
+            OMDBDownloader(),  # This API is very limited. It should always be last.
+        ]
         self.loading_dialog = LoadingDialog()
 
         # clicking on video item will pause video
