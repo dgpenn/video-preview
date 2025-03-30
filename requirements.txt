@@ -3,6 +3,7 @@ cattrs==24.1.2
 certifi==2025.1.31
 charset-normalizer==3.4.1
 idna==3.10
+lxml==5.3.1
 platformdirs==4.3.6
 PyQt6==6.8.1
 PyQt6-Qt6==6.8.2
@@ -10,6 +11,6 @@ PyQt6_sip==13.10.0
 requests==2.32.3
 requests-cache==1.2.1
 six==1.17.0
-tvdb-v4-official==1.1.0
 url-normalize==1.4.3
 urllib3==2.3.0
+webencodings==0.5.1
