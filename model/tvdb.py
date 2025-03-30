@@ -1,7 +1,6 @@
 import json
 import requests
 import requests_cache
-from typing import Any
 from model.metadata import Series, Network, Season, Episode
 
 
@@ -97,7 +96,7 @@ class MetadataDownloader:
 
     def _process_series(
         self,
-        all_series: list[str],
+        all_series: list[dict],
         language: str = "eng",
         season_type: str = "official",
     ) -> list[Series]:
