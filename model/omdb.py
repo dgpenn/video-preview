@@ -1,8 +1,16 @@
+import sys
 import json
 import calendar
 import requests
 import requests_cache
-from metadata import Series, Season, Episode
+from pathlib import Path
+
+import functools
+
+
+# Always import relative to *this* file's parent directory
+sys.path.append(Path(__file__).parent.as_posix())
+from metadata import Series, Season, Episode, Movie
 
 
 class MetadataDownloader:
@@ -14,6 +22,7 @@ class MetadataDownloader:
         self._month_abbrs = {
             name: num for num, name in enumerate(calendar.month_abbr) if num
         }
+        self.timeout = 60
         self._load_apikey(keyfile=keyfile)
 
     def _new_session(
@@ -25,6 +34,9 @@ class MetadataDownloader:
             expire_after=expiration,
         )
         self.session = requests.Session()
+        self.session.request = functools.partial(
+            self.session.request, timeout=self.timeout
+        )
 
     def _load_apikey(self, keyfile) -> None:
         with open(keyfile) as fn:
@@ -66,6 +78,8 @@ class MetadataDownloader:
         limit: int = 5,
         allow_missing_episodes: bool = False,
     ) -> list[Series]:
+        all_series = []
+
         params = {"s": name, "type": "series"}
         if year:
             params["y"] = year
@@ -80,8 +94,34 @@ class MetadataDownloader:
 
         return self._process_series(all_series, allow_missing_episodes)
 
+    def search_movies(
+        self,
+        name: str,
+        year: int = None,
+        limit: int = 5,
+    ) -> list[Movie]:
+        all_movies = []
+
+        params = {"s": name, "type": "movie"}
+        if year:
+            params["y"] = year
+
+        results = self._get_omdb(params)
+        if "Search" in results:
+            if results["Search"] != "N/A":
+                all_movies = results["Search"]
+
+        if len(all_movies) > limit:
+            all_movies = all_movies[0:limit]
+
+        return self._process_movies(all_movies)
+
     def _get_series(self, series_id):
         params = {"i": series_id, "plot": "full"}
+        return self._get_omdb(params)
+
+    def _get_movie(self, movie_id):
+        params = {"i": movie_id, "plot": "full"}
         return self._get_omdb(params)
 
     def _get_episode(self, series_id: str, season_number: int, episode_number: int):
@@ -222,3 +262,54 @@ class MetadataDownloader:
                 processed_series += [series]
 
         return processed_series
+
+    def _process_movies(self, all_movies: list[dict]) -> list[Movie]:
+        processed_movies = []
+        for result in all_movies:
+            movie = Movie()
+            movie.source = "omdb"
+
+            if "imdbID" not in result:
+                continue
+
+            if result["imdbID"] == "N/A":
+                continue
+
+            movie.ids["imdb"] = result["imdbID"]
+
+            s = self._get_movie(movie.ids["imdb"])
+
+            if "Title" in s:
+                if s["Title"] != "N/A":
+                    movie.name = s["Title"]
+            if "Year" in s:
+                if s["Year"] != "N/A":
+                    movie.year = int(s["Year"][0:4])
+            if "Released" in s:
+                if s["Released"] != "N/A":
+                    release_date = s["Released"]
+                    if release_date:
+                        day, month, year = release_date.split()
+                        movie.air_date = f"{year}-{self._month_abbrs[month]}-{day}"
+            if "Genre" in s:
+                if s["Genre"] != "N/A":
+                    genres = s["Genre"].split(",")
+                    genres = [genre.strip() for genre in genres]
+                    movie.genres += genres
+            if "Plot" in s:
+                if s["Plot"] != "N/A":
+                    movie.overview = s["Plot"].replace("\\'", "'")
+            if "Poster" in s:
+                if s["Poster"] != "N/A":
+                    movie.poster_path = s["Poster"]
+
+            if movie.is_valid():
+                processed_movies += [movie]
+
+        return processed_movies
+
+
+if __name__ == "__main__":
+    d = MetadataDownloader()
+    movies = d.search_movies("The Matrix", limit=1)
+    print(movies)

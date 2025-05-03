@@ -2,10 +2,6 @@
 
 import sys
 from pathlib import Path
-from view.metadata_preview import MetadataPreview
-from view.video_preview import VideoPreview
-from view.video_tree import VideoTree
-from controller.primary import PrimaryController
 from PyQt6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -15,6 +11,11 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from PyQt6.QtCore import QThread, pyqtSignal
+from view.metadata_preview import SeriesMetadataPreview, MetadataPreview
+from view.video_preview import VideoPreview
+from view.video_tree import VideoTree
+from controller.primary import PrimaryController
+from argparse import ArgumentParser
 
 
 class RenameWorker(QThread):
@@ -30,12 +31,19 @@ class RenameWorker(QThread):
 
 
 class Previewer(QMainWindow):
-    def __init__(self):
+    def __init__(self, mode=PrimaryController.MODE.SERIES.value):
         super().__init__()
         self.setWindowTitle("Video Previewer")
         self.preview = VideoPreview()
         self.video_tree_widget = VideoTree()
-        self.metadata_preview = MetadataPreview()
+        self.mode = mode
+
+        match self.mode:
+            case PrimaryController.MODE.SERIES.value:
+                self.metadata_preview = SeriesMetadataPreview()
+            case _:
+                self.metadata_preview = MetadataPreview()
+
         self.controller = PrimaryController(
             self.video_tree_widget, self.preview, self.metadata_preview, parent=self
         )
@@ -83,8 +91,21 @@ class Previewer(QMainWindow):
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-m",
+        "--movie",
+        action="store_true",
+        help="Start the application in movie mode",
+    )
+    args = parser.parse_args()
+
+    mode = PrimaryController.MODE.SERIES.value
+    if args.movie:
+        mode = PrimaryController.MODE.MEDIA.value
+
     app = QApplication(sys.argv)
-    window = Previewer()
+    window = Previewer(mode=mode)
     window.show()
     stylesheet = Path("style.qss")
     if stylesheet.is_file():

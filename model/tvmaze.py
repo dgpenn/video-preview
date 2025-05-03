@@ -1,9 +1,15 @@
+import sys
 import json
 import lxml.html
 import requests
 import requests_cache
-from dataclasses import field
-from model.metadata import Series, Network, Season, Episode
+import functools
+
+from pathlib import Path
+
+# Always import relative to *this* file's parent directory
+sys.path.append(Path(__file__).parent.as_posix())
+from metadata import Series, Network, Season, Episode, Movie
 
 
 class MetadataDownloader:
@@ -11,6 +17,7 @@ class MetadataDownloader:
 
     def __init__(self) -> None:
         self.session = None
+        self.timeout = 60
 
     def _new_session(
         self, cache_name: str = "metadata_cache", expiration: int = 3600 * 24 * 30
@@ -21,6 +28,9 @@ class MetadataDownloader:
             expire_after=expiration,
         )
         self.session = requests.Session()
+        self.session.request = functools.partial(
+            self.session.request, timeout=self.timeout
+        )
 
     def _get_tvmaze(self, endpoint, params={}):
         url = f"https://api.tvmaze.com/{endpoint}"
@@ -46,9 +56,11 @@ class MetadataDownloader:
             all_series = all_series[0:limit]
         return self._process_series(all_series)
 
-    def _process_externals(
-        self, externals: dict = field(default_factory=dict[str, str | int])
-    ):
+    def search_movies(self, name: str, year: int = None, limit: int = 5) -> list[Movie]:
+        """Placeholder to search for movies. This will always return an empty list as TV Maze does not support movies."""
+        return []
+
+    def _process_externals(self, externals: dict[str, str | int]):
         """
         Process externals to extract relevant ids for other services like IMDb, TVDB, etc.
         """
@@ -100,7 +112,7 @@ class MetadataDownloader:
             return parsed.text_content().strip()
         return ""
 
-    def _process_image(self, image: field(default_factory=dict[str, str])):
+    def _process_image(self, image: dict[str, str]):
         """
         Process the image dictionary to extract the image URL.
         """

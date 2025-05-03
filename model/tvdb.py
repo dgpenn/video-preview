@@ -1,7 +1,14 @@
+import sys
 import json
 import requests
 import requests_cache
-from model.metadata import Series, Network, Season, Episode
+from pathlib import Path
+
+import functools
+
+# Always import relative to *this* file's parent directory
+sys.path.append(Path(__file__).parent.as_posix())
+from metadata import Series, Network, Season, Episode, Movie
 
 
 class MetadataDownloader:
@@ -11,6 +18,7 @@ class MetadataDownloader:
         self.token = None
         self.session = None
         self.genres = {}
+        self.timeout = 60
         self._load_token(keyfile=keyfile)
 
     def _new_session(
@@ -22,6 +30,9 @@ class MetadataDownloader:
             expire_after=expiration,
         )
         self.session = requests.Session()
+        self.session.request = functools.partial(
+            self.session.request, timeout=self.timeout
+        )
 
     def _load_token(self, keyfile) -> None:
         with open(keyfile) as fn:
@@ -65,23 +76,64 @@ class MetadataDownloader:
                 return data
         return {}
 
-    def search_series(
-        self, name: str, year: int = None, language: str = "eng", limit: int = 5
+    def search(
+        self,
+        name: str,
+        year: int = None,
+        media_type: str = "series",
+        language: str = "eng",
+        limit: int = 5,
     ) -> list[Series]:
-        params = {"query": name, "language": language, "limit": limit}
+        params = {
+            "query": name,
+            "language": language,
+            "limit": limit,
+            "type": media_type,
+        }
         if year:
             params["year"] = year
         all_series = self._get_tvdb("search", params=params)
         if not all_series:
             return []
-        return self._process_series(all_series, language=language)
+
+        match media_type:
+            case "series":
+                return self._process_series(all_series, language=language)
+            case "movie":
+                return self._process_movies(all_series, language=language)
+
+    def search_series(
+        self,
+        name: str,
+        year: int = None,
+        language: str = "eng",
+        limit: int = 5,
+    ) -> list[Series]:
+        return self.search(name, year, "series", language, limit)
+
+    def search_movies(
+        self,
+        name: str,
+        year: int = None,
+        language: str = "eng",
+        limit: int = 5,
+    ) -> list[Series]:
+        return self.search(name, year, "movie", language, limit)
 
     def _get_series_extended(self, series_id: int) -> dict:
         endpoint = f"series/{series_id}/extended"
         return self._get_tvdb(endpoint)
 
+    def _get_movie_extended(self, movie_id: int) -> dict:
+        endpoint = f"movies/{movie_id}/extended"
+        return self._get_tvdb(endpoint)
+
     def _get_series_translations(self, series_id: int, language: str) -> dict:
         endpoint = f"series/{series_id}/translations/{language}"
+        return self._get_tvdb(endpoint)
+
+    def _get_movie_translations(self, movie_id: int, language: str) -> dict:
+        endpoint = f"movies/{movie_id}/translations/{language}"
         return self._get_tvdb(endpoint)
 
     def _get_season(self, season_id: int) -> dict:
@@ -93,6 +145,57 @@ class MetadataDownloader:
     ) -> dict:
         endpoint = f"series/{series_id}/episodes/{season_type}/{lang}"
         return self._get_tvdb(endpoint)
+
+    def _process_movies(
+        self, all_movies: list[dict], language: str = "eng"
+    ) -> list[Movie]:
+        all_features = []
+        for s in all_movies:
+            movie = Movie()
+            movie.ids["tvdb"] = s["tvdb_id"]
+            movie_extended = self._get_movie_extended(movie.ids["tvdb"])
+            movie_translation = self._get_movie_translations(
+                movie.ids["tvdb"], language=language
+            )
+
+            if "name" in movie_translation:
+                movie.name = movie_translation["name"]
+            if "name" in s:
+                movie.original_name = s["name"]
+
+            if "artworks" in movie_extended:
+                for artwork in movie_extended["artworks"]:
+                    match artwork["type"]:
+                        case 1:  # Banner
+                            if not movie.backdrop_path:
+                                movie.backdrop_path = artwork["image"]
+                        case 2:  # Poster
+                            if not movie.poster_path:
+                                movie.poster_path = artwork["image"]
+
+            if "genres" in movie_extended:
+                for genre in movie_extended["genres"]:
+                    movie.genres += [genre]
+
+            if "overview" in movie_translation:
+                movie.overview = movie_translation["overview"]
+
+            if "first_air_time" in s:
+                movie.air_date = s["first_air_time"]
+
+            if "year" in s:
+                movie.year = int(s["year"])
+
+            if "network" in s:
+                network = Network()
+                network.name = s["network"]
+                movie.networks += [network]
+
+            movie.source = "tvdb"
+            if movie.is_valid():
+                all_features += [movie]
+
+        return all_features
 
     def _process_series(
         self,
@@ -166,7 +269,9 @@ class MetadataDownloader:
 
                     if season.number not in series.seasons:
                         series.seasons[season.number] = season
-                    # Season will not be valid until after episodes are processed
+
+            # Season will not be valid until after episodes are processed
+
             series.source = "tvdb"
             series = self._process_episodes(series, season_type=season_type)
 
@@ -229,3 +334,8 @@ class MetadataDownloader:
                                 episode.number
                             ] = episode
         return series
+
+
+if __name__ == "__main__":
+    d = MetadataDownloader()
+    media = d.search_movies("The Matrix", year=1999, limit=1)
