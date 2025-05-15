@@ -33,6 +33,8 @@ def set_metadata_title(title: str, video: Path) -> None:
     """
     title = title.strip()
     mkvpropedit = Path(shutil.which("mkvpropedit"))
+    if not mkvpropedit:
+        raise FileNotFoundError("mkvpropedit not in PATH!")
     command = [
         mkvpropedit.as_posix(),
         video.as_posix(),
